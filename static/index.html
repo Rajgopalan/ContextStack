@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>AOP Generator</title>
+<style>body{font-family:system-ui;max-width:800px;margin:40px auto;padding:0 16px}pre{background:#f4f4f4;padding:12px;overflow:auto}</style>
+</head>
+<body>
+<h1>AOP Generator (1-2 docs → 1 machine-readable AOP)</h1>
+<input type="file" id="files" multiple accept=".pdf,.docx,.txt,.md">
+<button onclick="upload()">Upload</button>
+<button onclick="generate()">Generate AOP</button>
+<select id="provider"><option value="mock">mock</option><option value="openai">openai</option><option value="anthropic">anthropic</option><option value="ollama">ollama</option></select>
+<pre id="out">Upload 1-2 documents, then Generate.</pre>
+<script>
+let fileIds=[];
+async function upload(){
+  const inp=document.getElementById('files'); const fd=new FormData();
+  for(const f of inp.files) fd.append('files',f);
+  const r=await fetch('/api/upload',{method:'POST',body:fd}); const j=await r.json();
+  fileIds=j.files.map(x=>x.file_id);
+  document.getElementById('out').textContent=JSON.stringify(j,null,2);
+}
+async function generate(){
+  const p=document.getElementById('provider').value;
+  const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file_ids:fileIds.slice(0,2),provider:p})});
+  document.getElementById('out').textContent=JSON.stringify(await r.json(),null,2);
+}
+</script>
+</body></html>
