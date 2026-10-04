@@ -1,0 +1,7 @@
+# Optional real-eval deps. Requires Python >=3.10.
+# Install: pip install -r requirements-eval.txt
+# NOTE: default env here is Python 3.9, so ragas/deepeval will NOT install.
+# Use --real (built-in LLM judge, zero new deps) on 3.9, or upgrade Python for ragas.
+ragas>=0.2
+datasets>=2.0
+langchain-openai>=0.1

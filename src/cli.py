@@ -4,6 +4,7 @@ import json
 import sys
 
 from .generator import generate_aop, save_aop
+from .models import aop_tokens, to_markdown
 
 
 def main():
@@ -17,8 +18,9 @@ def main():
         sys.exit(1)
     aop = generate_aop(args.files, title_override=args.title, provider_name=args.provider)
     path = save_aop(aop)
-    print(json.dumps(aop.model_dump(), indent=2))
-    print(f"\nSaved to {path}", file=sys.stderr)
+    print(to_markdown(aop))
+    print(f"\n---\nJSON: {json.dumps(aop.model_dump(), indent=2)}", file=sys.stderr)
+    print(f"Saved {path} + {path[:-5]}.md | ~{aop_tokens(aop)} tokens (md)", file=sys.stderr)
 
 
 if __name__ == "__main__":

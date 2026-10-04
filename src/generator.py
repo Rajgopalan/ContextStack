@@ -1,17 +1,18 @@
-"""Core generation logic: load 1-2 docs -> extract -> truncate -> LLM -> validate."""
+"""Load 1-2 docs -> 4-stage pipeline -> lean AOP -> save JSON + MD."""
 import os
 import uuid
 from typing import List
 
 from . import config
 from .llm import get_provider
-from .models import AOP
+from .models import AOP, aop_tokens, to_markdown
 from .parsers import extract_text
+from .pipeline import run_pipeline_dict
 
 
 def load_documents(filepaths: List[str]):
     if not 1 <= len(filepaths) <= 2:
-        raise ValueError("Provide 1 or 2 documents for MVP (got %d)" % len(filepaths))
+        raise ValueError("Provide 1 or 2 documents (got %d)" % len(filepaths))
     docs = []
     for fp in filepaths:
         if not os.path.exists(fp):
@@ -20,7 +21,6 @@ def load_documents(filepaths: List[str]):
         text = text.strip()
         if not text:
             raise ValueError(f"No extractable text in {fp}")
-        # truncate per-doc then globally
         text = text[: config.MAX_CHARS_PER_DOC]
         docs.append({"filename": os.path.basename(fp), "text": text})
     total = sum(len(d["text"]) for d in docs)
@@ -34,26 +34,31 @@ def load_documents(filepaths: List[str]):
 def generate_aop(filepaths: List[str], title_override=None, provider_name=None) -> AOP:
     docs = load_documents(filepaths)
     provider = get_provider(provider_name or config.LLM_PROVIDER)
-    raw = provider.generate_aop_json(docs)
+    raw = run_pipeline_dict(provider, docs)
     aop = AOP(
         id=f"aop_{uuid.uuid4().hex[:8]}",
         title=title_override or raw.get("title", "Untitled AOP"),
-        version="1.0.0",
-        description=raw.get("description", ""),
-        source_documents=[d["filename"] for d in docs],
-        preconditions=raw.get("preconditions", []),
-        inputs=raw.get("inputs", []),
-        outputs=raw.get("outputs", []),
+        trigger_when=raw.get("trigger_when", raw.get("trigger", "On matching incident")),
+        inputs=raw.get("inputs", [])[:5],
         steps=raw.get("steps", []),
-        error_handling=raw.get("error_handling", []),
-        notes=raw.get("notes", ""),
+        must_not=raw.get("must_not", raw.get("guards", []))[:5],
+        source_documents=[d["filename"] for d in docs],
+        notes=f"lean v2, {aop_tokens_raw(raw)} tok est, from {len(docs)} doc(s)",
     )
     return aop
 
 
+def aop_tokens_raw(raw: dict) -> int:
+    import json as _j
+
+    return max(1, len(_j.dumps(raw)) // 4)
+
+
 def save_aop(aop: AOP) -> str:
-    path = os.path.join(config.AOP_DIR, f"{aop.id}.json")
-    with open(path, "w", encoding="utf-8") as f:
+    jpath = os.path.join(config.AOP_DIR, f"{aop.id}.json")
+    mpath = os.path.join(config.AOP_DIR, f"{aop.id}.md")
+    with open(jpath, "w", encoding="utf-8") as f:
         f.write(aop.model_dump_json(indent=2))
-    # also save YAML-style via json (avoid extra dep); YAML export in API if pyyaml present
-    return path
+    with open(mpath, "w", encoding="utf-8") as f:
+        f.write(to_markdown(aop))
+    return jpath

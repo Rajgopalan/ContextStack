@@ -10,9 +10,9 @@ from pydantic import BaseModel
 
 from . import config
 from .generator import generate_aop, save_aop
-from .models import AOP
+from .models import aop_tokens, to_markdown
 
-app = FastAPI(title="AOP Generator", version="0.1.0")
+app = FastAPI(title="ContextStack AOP", version="2.0.0")
 
 ALLOWED_EXTS = {".pdf", ".docx", ".txt", ".md"}
 
@@ -26,13 +26,13 @@ def index():
     idx = os.path.join("static", "index.html")
     if os.path.exists(idx):
         return FileResponse(idx)
-    return {"message": "AOP Generator API. See /docs"}
+    return {"message": "ContextStack AOP API. See /docs"}
 
 
 class GenerateRequest(BaseModel):
     file_ids: List[str]
     title: Optional[str] = None
-    provider: Optional[str] = None  # mock | openai | anthropic | ollama
+    provider: Optional[str] = None
 
 
 @app.post("/api/upload")
@@ -56,9 +56,7 @@ def generate(req: GenerateRequest):
         raise HTTPException(400, "Provide 1 or 2 file_ids")
     paths = []
     for fid in req.file_ids:
-        # guard path traversal
-        safe = os.path.basename(fid)
-        p = os.path.join(config.UPLOAD_DIR, safe)
+        p = os.path.join(config.UPLOAD_DIR, os.path.basename(fid))
         if not os.path.exists(p):
             raise HTTPException(404, f"File not found: {fid}")
         paths.append(p)
@@ -67,7 +65,10 @@ def generate(req: GenerateRequest):
     except Exception as e:
         raise HTTPException(500, str(e))
     save_aop(aop)
-    return aop.model_dump()
+    d = aop.model_dump()
+    d["markdown"] = to_markdown(aop)
+    d["tokens_md_est"] = aop_tokens(aop)
+    return d
 
 
 @app.get("/api/aops")
@@ -83,9 +84,16 @@ def list_aops():
 def get_aop(aop_id: str):
     import json
 
-    safe = os.path.basename(aop_id)
-    p = os.path.join(config.AOP_DIR, f"{safe}.json")
+    p = os.path.join(config.AOP_DIR, f"{os.path.basename(aop_id)}.json")
     if not os.path.exists(p):
         raise HTTPException(404, "AOP not found")
     with open(p, encoding="utf-8") as f:
         return JSONResponse(content=json.load(f))
+
+
+@app.get("/api/aops/{aop_id}/markdown", response_class=FileResponse)
+def get_aop_md(aop_id: str):
+    p = os.path.join(config.AOP_DIR, f"{os.path.basename(aop_id)}.md")
+    if not os.path.exists(p):
+        raise HTTPException(404, "AOP markdown not found")
+    return FileResponse(p, media_type="text/markdown")

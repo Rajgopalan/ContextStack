@@ -1,0 +1,171 @@
+{
+  "report": {
+    "aop_id": "aop_c44cc01a",
+    "provider": "OllamaProvider",
+    "verdict": "PASS",
+    "mode": "real",
+    "raw_tokens_est": 4794,
+    "aop_tokens_est": 324,
+    "token_reduction": 0.932,
+    "coverage": 0.071,
+    "grounding": 1.0,
+    "executability": 1.0,
+    "per_doc": {
+      "open_incident_runbook.md": {
+        "n_must": 7,
+        "coverage": 0.0
+      },
+      "open_phishing_playbook.md": {
+        "n_must": 7,
+        "coverage": 0.143
+      }
+    },
+    "checks": {
+      "grounding>=0.8": true,
+      "executability>=0.8": true,
+      "token_reduction>=0.7": true,
+      "aop_faith>=raw_faith-0.1": true,
+      "aop_relev>=raw_relev-0.1": true
+    },
+    "llm_ab": {
+      "raw_faith": 0.986,
+      "aop_faith": 0.956,
+      "raw_relev": 0.87,
+      "aop_relev": 0.93,
+      "rows": [
+        {
+          "q": "An analyst receives an email with the subject \"Verify your password immediately\" and a link to example.com/reset. What is the MOST critical initial step the analyst should take?",
+          "raw": "Spin up a private channel to investigate the issue.",
+          "aop": "The analyst MUST Check URL against threat intelligence [tool: VirusTotal] to determine if example.com/reset is a malicious link.",
+          "raw_faith": 0.99,
+          "aop_faith": 0.95,
+          "raw_relev": 0.4,
+          "aop_relev": 1.0
+        },
+        {
+          "q": "You've identified an email with a Gmail sender domain spoofing Microsoft, but the SPF record is passing. What additional investigation is crucial to confirm a potential phishing attack?",
+          "raw": "Analyzing the email headers, particularly the Return-Path, to identify the true originating source. Additionally, checking the email's content for suspicious links and mimicking Microsoft's branding, ",
+          "aop": "Check URL against threat intelligence using VirusTotal to determine if the URL is malicious.",
+          "raw_faith": 0.98,
+          "aop_faith": 1.0,
+          "raw_relev": 1.0,
+          "aop_relev": 0.95
+        },
+        {
+          "q": "A user reports clicking a link in a phishing email. Immediately after the report, what is the FIRST action the analyst MUST take regarding the affected user\u2019s account?",
+          "raw": "Isolate the user's account to prevent further potential compromise.",
+          "aop": "Analyze email headers using a SIEM to verify the email.",
+          "raw_faith": 0.98,
+          "aop_faith": 1.0,
+          "raw_relev": 1.0,
+          "aop_relev": 0.9
+        },
+        {
+          "q": "During an incident response, what is the primary purpose of spinning up a private incident response channel (e.g., #incident-private-subject)?",
+          "raw": "To investigate the issue privately without flooding the main channel and to restrict access to sensitive information.",
+          "aop": "The primary purpose is to facilitate communication and coordination during a phishing incident response, as outlined in the provided runbook.",
+          "raw_faith": 1.0,
+          "aop_faith": 0.98,
+          "raw_relev": 1.0,
+          "aop_relev": 1.0
+        },
+        {
+          "q": "You are determining the incident severity. A user clicked a phishing link, entered credentials, and the system is offline. What is the most important piece of information to determine next?",
+          "raw": "The extent of the data breach and potential impact on users and systems.",
+          "aop": "Verify presence of spoofed logo using visual inspection.",
+          "raw_faith": 0.98,
+          "aop_faith": 0.85,
+          "raw_relev": 0.95,
+          "aop_relev": 0.8
+        }
+      ]
+    },
+    "ragas": null,
+    "note": "Structural verdict is offline. --real runs LLM judge (faith/relev) + optional Ragas; needs API key."
+  },
+  "aop": {
+    "id": "aop_c44cc01a",
+    "title": "Phishing incident response",
+    "trigger_when": "user reports suspicious emails",
+    "inputs": [
+      "user reports"
+    ],
+    "steps": [
+      {
+        "id": "s1",
+        "do": "Analyze email headers",
+        "check": "verify or null",
+        "tool": "SIEM",
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s2",
+        "do": "Check subject/body for urgency",
+        "check": "verify or null",
+        "tool": "rule engine",
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s3",
+        "do": "Check for generic greeting",
+        "check": "verify or null",
+        "tool": "rule engine",
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s4",
+        "do": "Verify presence of spoofed logo",
+        "check": "verify or null",
+        "tool": "visual inspection",
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s5",
+        "do": "Check URL against threat intelligence",
+        "check": "verify or null",
+        "tool": "VirusTotal",
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s6",
+        "do": "Isolate affected users",
+        "check": "verify or null",
+        "tool": "network isolation",
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s7",
+        "do": "Reset credentials",
+        "check": "verify or null",
+        "tool": "password reset tool",
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s8",
+        "do": "Quarantine malicious emails",
+        "check": "verify or null",
+        "tool": "email gateway",
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s9",
+        "do": "Block sender/domain",
+        "check": "verify or null",
+        "tool": "firewall",
+        "on_fail": "Log, retry once, escalate"
+      }
+    ],
+    "must_not": [
+      "non-Microsoft URL",
+      "generic greeting",
+      "spoofed logo"
+    ],
+    "source_documents": [
+      "open_incident_runbook.md",
+      "open_phishing_playbook.md"
+    ],
+    "version": "2.0.0",
+    "notes": "lean v2, 365 tok est, from 2 doc(s)"
+  },
+  "markdown": "# Phishing incident response\n\nUSE WHEN: user reports suspicious emails\n\nINPUTS: user reports\n\nSTEPS:\n1. MUST Analyze email headers [tool: SIEM]\n   Check: verify or null\n   On fail: Log, retry once, escalate\n2. MUST Check subject/body for urgency [tool: rule engine]\n   Check: verify or null\n   On fail: Log, retry once, escalate\n3. MUST Check for generic greeting [tool: rule engine]\n   Check: verify or null\n   On fail: Log, retry once, escalate\n4. MUST Verify presence of spoofed logo [tool: visual inspection]\n   Check: verify or null\n   On fail: Log, retry once, escalate\n5. MUST Check URL against threat intelligence [tool: VirusTotal]\n   Check: verify or null\n   On fail: Log, retry once, escalate\n6. MUST Isolate affected users [tool: network isolation]\n   Check: verify or null\n   On fail: Log, retry once, escalate\n7. MUST Reset credentials [tool: password reset tool]\n   Check: verify or null\n   On fail: Log, retry once, escalate\n8. MUST Quarantine malicious emails [tool: email gateway]\n   Check: verify or null\n   On fail: Log, retry once, escalate\n9. MUST Block sender/domain [tool: firewall]\n   Check: verify or null\n   On fail: Log, retry once, escalate\n\nMUST NOT:\n- non-Microsoft URL\n- generic greeting\n- spoofed logo\n\nSources: open_incident_runbook.md, open_phishing_playbook.md"
+}

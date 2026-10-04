@@ -1,0 +1,152 @@
+{
+  "report": {
+    "aop_id": "aop_19981470",
+    "provider": "OllamaProvider",
+    "verdict": "PASS",
+    "mode": "real",
+    "raw_tokens_est": 2219,
+    "aop_tokens_est": 252,
+    "token_reduction": 0.886,
+    "coverage": 0.0,
+    "grounding": 1.0,
+    "executability": 1.0,
+    "per_doc": {
+      "open_phishing_playbook.md": {
+        "n_must": 7,
+        "coverage": 0.0
+      }
+    },
+    "checks": {
+      "grounding>=0.8": true,
+      "executability>=0.8": true,
+      "token_reduction>=0.7": true,
+      "aop_faith>=raw_faith-0.1": true,
+      "aop_relev>=raw_relev-0.1": true
+    },
+    "llm_ab": {
+      "raw_faith": 1.0,
+      "aop_faith": 1.0,
+      "raw_relev": 1.0,
+      "aop_relev": 0.96,
+      "rows": [
+        {
+          "q": "A user reports receiving an email with the subject \"Verify your password immediately\" and a generic greeting like \"Dear user.\" What is the FIRST thing a Tier 1 analyst should do, according to this playbook?",
+          "raw": "The Tier 1 analyst should check the subject/body for urgency, generic greeting, and a spoofed logo, as these are primary indicators of a phishing email impersonating Microsoft.",
+          "aop": "The first thing a Tier 1 analyst should do is investigate and block malicious emails using the SIEM tool, as indicated in Step 1 of the playbook.",
+          "raw_faith": 1.0,
+          "aop_faith": 1.0,
+          "raw_relev": 1.0,
+          "aop_relev": 1.0
+        },
+        {
+          "q": "The playbook states that a key indicator of a phishing email is a link to a non-Microsoft domain, which later returns a 404 error. What action should a Tier 2 analyst take after confirming this indicator?",
+          "raw": "The analyst should execute a full sandbox/VT report on the email and URL, confirm the non-Microsoft domain and 404 status, and then escalate to Tier 3 for broader hunt and potential infra takedown coo",
+          "aop": "The playbook dictates that Tier 2 analysts MUST investigate and block malicious emails using a SIEM, quarantine the email via the email gateway, and reset the user's credentials within the identity ma",
+          "raw_faith": 1.0,
+          "aop_faith": 1.0,
+          "raw_relev": 1.0,
+          "aop_relev": 1.0
+        },
+        {
+          "q": "A user has clicked a link in a phishing email and entered their credentials. What immediate recovery step MUST a Tier 2 analyst take, as outlined in the playbook?",
+          "raw": "The analyst must immediately reset the user\u2019s credentials and revoke all associated OAuth tokens and MFA sessions.",
+          "aop": "The Tier 2 analyst MUST reset user credentials using the identity management system, as outlined in step 3 of the playbook.",
+          "raw_faith": 1.0,
+          "aop_faith": 1.0,
+          "raw_relev": 1.0,
+          "aop_relev": 1.0
+        },
+        {
+          "q": "The playbook identifies a potential risk of credential theft through mailbox persistence. What specific action should a Tier 2 analyst take to mitigate this risk during the recovery phase?",
+          "raw": "The analyst should check and remove any auto-forwarding or inbox rules used for persistence in the affected user\u2019s mailbox.",
+          "aop": "The playbook dictates resetting user credentials using the identity management system, which should be verified and escalated if it fails.",
+          "raw_faith": 1.0,
+          "aop_faith": 1.0,
+          "raw_relev": 1.0,
+          "aop_relev": 0.8
+        },
+        {
+          "q": "According to the playbook, what is the PRIMARY method for preventing future phishing attacks after an incident, and what should be monitored for?",
+          "raw": "The playbook emphasizes DMARC enforcement with monitoring, alongside expanding SIEM rules for combined signals (urgency + generic greeting + brand keywords) to detect similar campaigns proactively.",
+          "aop": "The playbook dictates monitoring for repeat deliveries using a SIEM tool, alongside conducting a post-incident review with documentation.",
+          "raw_faith": 1.0,
+          "aop_faith": 1.0,
+          "raw_relev": 1.0,
+          "aop_relev": 1.0
+        }
+      ]
+    },
+    "ragas": null,
+    "note": "Structural verdict is offline. --real runs LLM judge (faith/relev) + optional Ragas; needs API key."
+  },
+  "aop": {
+    "id": "aop_19981470",
+    "title": "Phishing response",
+    "trigger_when": "Urgent email with generic greeting and Microsoft branding",
+    "inputs": [
+      "email headers",
+      "sandbox reports",
+      "user reports"
+    ],
+    "steps": [
+      {
+        "id": "s1",
+        "do": "investigate and block malicious emails",
+        "check": "verify",
+        "tool": "SIEM",
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s2",
+        "do": "quarantine suspicious emails",
+        "check": "verify",
+        "tool": "email gateway",
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s3",
+        "do": "reset user credentials",
+        "check": "verify",
+        "tool": "identity management system",
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s4",
+        "do": "enforce MFA",
+        "check": "verify",
+        "tool": "identity management system",
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s5",
+        "do": "revoke OAuth tokens",
+        "check": "verify",
+        "tool": "identity management system",
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s6",
+        "do": "monitor for repeat deliveries",
+        "check": "verify",
+        "tool": "SIEM",
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s7",
+        "do": "conduct a post-incident review",
+        "check": "verify",
+        "tool": "documentation",
+        "on_fail": "Log, retry once, escalate"
+      }
+    ],
+    "must_not": [
+      "min 1 guard"
+    ],
+    "source_documents": [
+      "open_phishing_playbook.md"
+    ],
+    "version": "2.0.0",
+    "notes": "lean v2, 292 tok est, from 1 doc(s)"
+  },
+  "markdown": "# Phishing response\n\nUSE WHEN: Urgent email with generic greeting and Microsoft branding\n\nINPUTS: email headers, sandbox reports, user reports\n\nSTEPS:\n1. MUST investigate and block malicious emails [tool: SIEM]\n   Check: verify\n   On fail: Log, retry once, escalate\n2. MUST quarantine suspicious emails [tool: email gateway]\n   Check: verify\n   On fail: Log, retry once, escalate\n3. MUST reset user credentials [tool: identity management system]\n   Check: verify\n   On fail: Log, retry once, escalate\n4. MUST enforce MFA [tool: identity management system]\n   Check: verify\n   On fail: Log, retry once, escalate\n5. MUST revoke OAuth tokens [tool: identity management system]\n   Check: verify\n   On fail: Log, retry once, escalate\n6. MUST monitor for repeat deliveries [tool: SIEM]\n   Check: verify\n   On fail: Log, retry once, escalate\n7. MUST conduct a post-incident review [tool: documentation]\n   Check: verify\n   On fail: Log, retry once, escalate\n\nMUST NOT:\n- min 1 guard\n\nSources: open_phishing_playbook.md"
+}
