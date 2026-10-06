@@ -1,0 +1,159 @@
+{
+  "report": {
+    "aop_id": "aop_8cab8bff",
+    "provider": "OllamaProvider",
+    "verdict": "PASS",
+    "mode": "real",
+    "raw_tokens_est": 4794,
+    "aop_tokens_est": 337,
+    "token_reduction": 0.93,
+    "coverage": 0.0,
+    "grounding": 1.0,
+    "executability": 1.0,
+    "per_doc": {
+      "open_incident_runbook.md": {
+        "n_must": 7,
+        "coverage": 0.0
+      },
+      "open_phishing_playbook.md": {
+        "n_must": 7,
+        "coverage": 0.0
+      }
+    },
+    "checks": {
+      "grounding>=0.8": true,
+      "executability>=0.8": true,
+      "token_reduction>=0.7": true,
+      "aop_faith>=raw_faith-0.1": true,
+      "aop_relev>=raw_relev-0.1": true
+    },
+    "llm_ab": {
+      "raw_faith": 0.98,
+      "aop_faith": 0.984,
+      "raw_relev": 0.99,
+      "aop_relev": 0.97,
+      "rows": [
+        {
+          "q": "An analyst receives an email with the subject line \"Verify your password immediately\" and a link to a non-Microsoft domain. What is the MOST immediate action the analyst should take?",
+          "raw": "Escalate to Tier 2 and contain the incident by blocking the sender/domain and quarantining the emails. The subject line and link are strong indicators of a phishing attack.",
+          "aop": "The analyst MUST notify the incident commander and key stakeholders immediately, as this likely indicates a phishing incident.",
+          "raw_faith": 0.98,
+          "aop_faith": 0.98,
+          "raw_relev": 1.0,
+          "aop_relev": 1.0
+        },
+        {
+          "q": "A user reports receiving a phishing email that includes a spoofed Microsoft logo and an urgent request to change their password. What is the PRIMARY goal of creating an incident bridge (e.g., Google Hangout) in this situation?",
+          "raw": "To facilitate real-time discussion and coordination among the incident response team to quickly assess the situation and implement containment measures.",
+          "aop": "The primary goal is to immediately establish communication with the incident commander and key stakeholders for coordinated response and investigation.",
+          "raw_faith": 0.98,
+          "aop_faith": 0.98,
+          "raw_relev": 1.0,
+          "aop_relev": 1.0
+        },
+        {
+          "q": "You identify a potential phishing attack where the sender domain doesn\u2019t align with the claimed Microsoft domain (e.g., Gmail instead of @microsoft.com). What security control should be implemented to mitigate this risk?",
+          "raw": "Implement DMARC (Domain-based Message Authentication, Reporting & Conformance) enforcement. DMARC verifies that emails claiming to be from a domain are actually sent from authorized sources, preventin",
+          "aop": "Implement temporary mitigation \u2013 stabilize systems, focusing on isolating affected systems and restricting network traffic to contain the phishing attack.",
+          "raw_faith": 0.98,
+          "aop_faith": 0.98,
+          "raw_relev": 1.0,
+          "aop_relev": 0.95
+        },
+        {
+          "q": "During a phishing investigation, a user clicks on a malicious link in a phishing email. What should be the FIRST step in the recovery process?",
+          "raw": "Reset the user's credentials immediately. This is the highest priority to prevent potential unauthorized access to their account.",
+          "aop": "The first step is to notify the incident commander and key stakeholders, ensuring a communication channel is established.",
+          "raw_faith": 0.98,
+          "aop_faith": 1.0,
+          "raw_relev": 0.95,
+          "aop_relev": 0.9
+        },
+        {
+          "q": "An incident response analyst discovers a suspicious email containing a credential-harvesting lure. Which action is MOST crucial to prevent further potential damage?",
+          "raw": "Escalate to Tier 2 and contain the incident by immediately blocking the sender/domain, quarantining matching emails, and resetting the credentials of the affected user.",
+          "aop": "MUST Contain affected systems \u2013 isolate if possible. The analyst should immediately attempt to isolate the systems potentially compromised by the phishing email.",
+          "raw_faith": 0.98,
+          "aop_faith": 0.98,
+          "raw_relev": 1.0,
+          "aop_relev": 1.0
+        }
+      ]
+    },
+    "ragas": null,
+    "note": "Structural verdict is offline. --real runs LLM judge (faith/relev) + optional Ragas; needs API key."
+  },
+  "aop": {
+    "id": "aop_8cab8bff",
+    "title": "Phishing incident response",
+    "trigger_when": "Suspected security incident reported \u2013 immediate action required.",
+    "inputs": [
+      "initial reporter",
+      "security team",
+      "stakeholders",
+      "incident commander",
+      "engineers"
+    ],
+    "steps": [
+      {
+        "id": "s1",
+        "do": "Notify incident commander and key stakeholders",
+        "check": "Commander and stakeholders alerted; channel established.",
+        "tool": null,
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s2",
+        "do": "Gather initial details from reporter",
+        "check": "Reporter\u2019s description validated; priority assessed.",
+        "tool": null,
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s3",
+        "do": "Verify system impact and potential scope",
+        "check": "Affected systems identified; user impact quantified.",
+        "tool": null,
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s4",
+        "do": "Contain affected systems \u2013 isolate if possible",
+        "check": "Isolation successful; network traffic restricted.",
+        "tool": null,
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s5",
+        "do": "Investigate root cause with security team",
+        "check": "Root cause analysis initiated; vulnerability identified.",
+        "tool": null,
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s6",
+        "do": "Implement temporary mitigation \u2013 stabilize systems",
+        "check": "Mitigation deployed; system stability confirmed.",
+        "tool": null,
+        "on_fail": "Log, retry once, escalate"
+      },
+      {
+        "id": "s7",
+        "do": "Document findings & remediation steps",
+        "check": "Incident documentation updated; evidence recorded.",
+        "tool": null,
+        "on_fail": "Log, retry once, escalate"
+      }
+    ],
+    "must_not": [
+      "min 1 guard"
+    ],
+    "source_documents": [
+      "open_incident_runbook.md",
+      "open_phishing_playbook.md"
+    ],
+    "version": "2.0.0",
+    "notes": "lean v2, 401 tok est, from 2 doc(s)"
+  },
+  "markdown": "# Phishing incident response\n\nUSE WHEN: Suspected security incident reported \u2013 immediate action required.\n\nINPUTS: initial reporter, security team, stakeholders, incident commander, engineers\n\nSTEPS:\n1. MUST Notify incident commander and key stakeholders\n   Check: Commander and stakeholders alerted; channel established.\n   On fail: Log, retry once, escalate\n2. MUST Gather initial details from reporter\n   Check: Reporter\u2019s description validated; priority assessed.\n   On fail: Log, retry once, escalate\n3. MUST Verify system impact and potential scope\n   Check: Affected systems identified; user impact quantified.\n   On fail: Log, retry once, escalate\n4. MUST Contain affected systems \u2013 isolate if possible\n   Check: Isolation successful; network traffic restricted.\n   On fail: Log, retry once, escalate\n5. MUST Investigate root cause with security team\n   Check: Root cause analysis initiated; vulnerability identified.\n   On fail: Log, retry once, escalate\n6. MUST Implement temporary mitigation \u2013 stabilize systems\n   Check: Mitigation deployed; system stability confirmed.\n   On fail: Log, retry once, escalate\n7. MUST Document findings & remediation steps\n   Check: Incident documentation updated; evidence recorded.\n   On fail: Log, retry once, escalate\n\nMUST NOT:\n- min 1 guard\n\nSources: open_incident_runbook.md, open_phishing_playbook.md"
+}
