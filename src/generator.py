@@ -1,4 +1,4 @@
-"""Load 1-2 docs -> 4-stage pipeline -> lean AOP -> save JSON + MD."""
+"""Load 1-2 docs (full text, chunked downstream) -> pipeline -> lean AOP -> save JSON + MD."""
 import os
 import uuid
 from typing import List
@@ -21,13 +21,10 @@ def load_documents(filepaths: List[str]):
         text = text.strip()
         if not text:
             raise ValueError(f"No extractable text in {fp}")
-        text = text[: config.MAX_CHARS_PER_DOC]
+        if len(text) > config.DOC_HARD_CAP:
+            print(f"WARNING: {fp} is {len(text)} chars, hard-capping at {config.DOC_HARD_CAP}")
+            text = text[: config.DOC_HARD_CAP]
         docs.append({"filename": os.path.basename(fp), "text": text})
-    total = sum(len(d["text"]) for d in docs)
-    if total > config.MAX_TOTAL_CHARS:
-        budget = config.MAX_TOTAL_CHARS // len(docs)
-        for d in docs:
-            d["text"] = d["text"][:budget]
     return docs
 
 

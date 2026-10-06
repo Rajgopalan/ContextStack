@@ -122,19 +122,19 @@ def _with_retry(fn, tries: int = 3):
 def gen_questions(docs, provider) -> List[Dict]:
     if type(provider).__name__ == "MockProvider":
         return _mock_questions(docs)
-    src = "\n".join(f"[{d['filename']}]\n{d['text'][:8000]}" for d in docs)
+    src = "\n".join(f"[{d['filename']}]\n{d['text']}" for d in docs)
     out = _with_retry(lambda: provider.chat_json(EVAL_QUESTIONS_PROMPT, f"SOURCE:\n{src}"))
     return out.get("questions", [])[:5]
 
 
 def answer(question: str, context: str, provider) -> str:
-    out = _with_retry(lambda: provider.chat_json(EVAL_ANSWER_PROMPT, f"CONTEXT:\n{context[:12000]}\n\nQ: {question}"))
+    out = _with_retry(lambda: provider.chat_json(EVAL_ANSWER_PROMPT, f"CONTEXT:\n{context[:30000]}\n\nQ: {question}"))
     return out.get("answer", "")
 
 
 def judge(question: str, context: str, ans: str, provider) -> dict:
     """Built-in LLM judge (no new deps): faithfulness + relevancy. Needs real provider."""
-    f = _with_retry(lambda: provider.chat_json(FAITH_PROMPT, f"CONTEXT:\n{context[:8000]}\nQ: {question}\nANSWER: {ans}"))
+    f = _with_retry(lambda: provider.chat_json(FAITH_PROMPT, f"CONTEXT:\n{context[:16000]}\nQ: {question}\nANSWER: {ans}"))
     r = _with_retry(lambda: provider.chat_json(RELEV_PROMPT, f"Q: {question}\nANSWER: {ans}"))
     return {"faith": float(f.get("score", 0)), "relev": float(r.get("score", 0))}
 
@@ -164,7 +164,7 @@ def evaluate(filepaths: List[str], provider_name=None, title=None, real: bool = 
     is_mock = type(provider).__name__ == "MockProvider"
     aop = generate_aop(filepaths, title_override=title, provider_name=provider_name)
 
-    raw_ctx = "\n".join(f"[{d['filename']}]\n{d['text']}" for d in docs)[:30000]
+    raw_ctx = "\n".join(f"[{d['filename']}]\n{d['text']}" for d in docs)[:60000]
     aop_ctx = to_markdown(aop)
     raw_tok = max(1, len(raw_ctx) // 4)
     aop_tok = aop_tokens(aop)

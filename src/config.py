@@ -20,3 +20,8 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1")
 
 MAX_CHARS_PER_DOC = int(os.getenv("MAX_CHARS_PER_DOC", "15000"))
 MAX_TOTAL_CHARS = int(os.getenv("MAX_TOTAL_CHARS", "30000"))
+
+# Chunked pipeline budgets (no truncation: full text is chunked and map-reduced)
+CHUNK_CHARS = int(os.getenv("CHUNK_CHARS", "6000"))
+CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "400"))
+DOC_HARD_CAP = int(os.getenv("DOC_HARD_CAP", "200000"))  # safety only, warns instead of cutting

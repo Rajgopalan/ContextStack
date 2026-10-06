@@ -1,25 +1,54 @@
-"""4-stage pipeline: extract per-doc -> merge -> compile/minimize -> validate."""
+"""Chunked map-reduce pipeline. No truncation: every chunk is processed.
+extract per chunk -> reduce per doc -> merge docs -> compile -> validate."""
 import json
 from typing import Dict, List
 
-from .llm import COMPILE_PROMPT, EXTRACT_PROMPT, MERGE_PROMPT
+from .chunking import chunk_text
+from .llm import COMPILE_PROMPT, EXTRACT_PROMPT, MERGE_PROMPT, REDUCE_PROMPT
+
+
+def _extract_user(filename: str, chunk: dict, n_chunks: int) -> str:
+    head = f" [{chunk['heading']}]" if chunk.get("heading") else ""
+    return (
+        f"SOURCE: {filename} — chunk {chunk['index'] + 1}/{n_chunks}{head}\n"
+        f"{chunk['text']}"
+    )
 
 
 def run_pipeline_dict(provider, docs: List[Dict[str, str]]) -> dict:
-    # 1. extract per doc (keeps per-doc context small, no cross-contamination)
+    # 1. map: extract per chunk (full text covered, chunks bounded for context)
     extractions = []
     for d in docs:
-        user = f"DOCUMENT: {d['filename']}\n{d['text'][:15000]}"
-        e = provider.chat_json(EXTRACT_PROMPT, user)
-        extractions.append(e)
+        chunks = chunk_text(d["text"])
+        chunk_exts = [
+            provider.chat_json(EXTRACT_PROMPT, _extract_user(d["filename"], c, len(chunks)))
+            for c in chunks
+        ]
+        # 2. reduce per doc (dedupe overlap, order by phase)
+        if len(chunk_exts) == 1:
+            doc_ext = chunk_exts[0]
+        else:
+            doc_ext = provider.chat_json(
+                REDUCE_PROMPT,
+                json.dumps({"document": d["filename"], "chunk_extractions": chunk_exts}),
+            )
+        extractions.append(doc_ext)
 
-    # 2. merge (dedupe, resolve conflicts, order)
-    merged = provider.chat_json(MERGE_PROMPT, json.dumps({"extractions": extractions})[:20000])
+    # 3. merge docs into one draft
+    if len(extractions) == 1:
+        merged = {
+            "actions": extractions[0].get("actions", [])[:9],
+            "inputs": extractions[0].get("inputs", []),
+            "guards": extractions[0].get("guards", []),
+            "trigger": extractions[0].get("trigger", ""),
+        }
+    else:
+        merged = provider.chat_json(MERGE_PROMPT, json.dumps({"extractions": extractions}))
 
-    # 3. compile/minimize (enforce 5-9 steps, <=140 chars, token budget)
-    compiled = provider.chat_json(COMPILE_PROMPT, json.dumps(merged)[:12000])
+    # 4. compile to minimal runtime artifact
+    compiled = provider.chat_json(COMPILE_PROMPT, json.dumps(merged))
 
-    # 4. validate (deterministic, no LLM): enforce 5-9 steps, fill gaps from merged
+    # 5. validate (deterministic, no LLM): enforce 5-9 steps, fill gaps from merged
     steps = compiled.get("steps", [])[:9]
     if len(steps) < 5 and merged.get("actions"):
         have = {s.get("do", "").lower()[:70] for s in steps}
